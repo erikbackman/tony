@@ -32,17 +32,6 @@ betweenParens = between (char '(') (char ')')
 line :: Parser Line
 line = try xn <|> tn
 
-linesToFile :: [Line] -> File
-linesToFile = foldl' (\z x -> case x of
-                               XNLine (XN xn) -> z { name = xn }
-                               TNLine tn      -> z { values = tn : values z })
-                    (File "" []) 
-
-fileToCsv :: String -> File -> String
-fileToCsv delim (File n vs) = unlines $ fmap toCsv vs
-  where
-    toCsv (TN pre val) = n <> delim <> pre <> delim <> val
-
 tn :: Parser Line
 tn = do
   manyTill anyChar space
@@ -58,3 +47,14 @@ xn = do
   pre <- string "XN"
   val <- manyTill anyChar (char ')') 
   pure $ XNLine (XN (pre <> val))
+
+linesToFile :: [Line] -> File
+linesToFile = foldl' (\z x -> case x of
+                               XNLine (XN xn) -> z { name = xn }
+                               TNLine tn      -> z { values = tn : values z })
+                    (File "" []) 
+
+fileToCsv :: String -> File -> String
+fileToCsv delim (File n vs) = unlines $ fmap toCsv vs
+  where
+    toCsv (TN pre val) = n <> delim <> pre <> delim <> val
