@@ -9,7 +9,6 @@ import Data.List
 main :: IO ()
 main = interact $ fileToCsv ";" . linesToFile . parseInput 
   where
-    -- formatCsv  = unlines . fmap (fileToCsv ";")
     parseInput = rights . fmap parse' . lines
     parse'     = parse line ""
 
