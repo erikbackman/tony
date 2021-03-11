@@ -1,22 +1,22 @@
 module Main where
 
-import Text.Parsec
+import Text.Parsec hiding (Line)
 import Text.Parsec.String
 import Data.Char
 import Data.Either
 import Data.List
 
 main :: IO ()
-main = interact $ formatCsv . parseInput 
+main = interact $ fileToCsv ";" . linesToFile . parseInput 
   where
-    formatCsv  = unlines . fmap (tnToCsv ";")
+    -- formatCsv  = unlines . fmap (fileToCsv ";")
     parseInput = rights . fmap parse' . lines
-    parse'     = parse tn ""
+    parse'     = parse line ""
 
-data TN = TN
-  { _prefix :: String
-  , _value :: String
-  } deriving Show
+data XN   = XN String deriving Show
+data TN   = TN { _prefix :: String, _value :: String } deriving Show
+data Line = XNLine XN | TNLine TN deriving Show
+data File = File { name :: String, values :: [TN] } deriving Show
 
 prefix :: Parser String
 prefix = do
@@ -30,14 +30,32 @@ value = many1 (satisfy (\c -> c `elem` "!$%&|*+-/:<=>?@^_~#." || isAlphaNum c ||
 betweenParens :: Parser a -> Parser a
 betweenParens = between (char '(') (char ')')
 
-tn :: Parser TN
+line :: Parser Line
+line = try xn <|> tn
+
+linesToFile :: [Line] -> File
+linesToFile = foldl' (\z x -> case x of
+                               XNLine (XN xn) -> z { name = xn }
+                               TNLine tn      -> z { values = tn : values z })
+                    (File "" []) 
+
+fileToCsv :: String -> File -> String
+fileToCsv delim (File n vs) = unlines $ fmap toCsv vs
+  where
+    toCsv (TN pre val) = n <> delim <> pre <> delim <> val
+
+tn :: Parser Line
 tn = do
   manyTill anyChar space
   spaces
   pre <- prefix 
   optional space
   val <- betweenParens value 
-  pure $ TN pre val
+  pure $ TNLine (TN pre val)
 
-tnToCsv :: String -> TN -> String
-tnToCsv delim (TN pre val) = pre <> delim <> val
+xn :: Parser Line
+xn = do
+  manyTill anyChar (char '(')
+  pre <- string "XN"
+  val <- manyTill anyChar (char ')') 
+  pure $ XNLine (XN (pre <> val))
