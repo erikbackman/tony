@@ -1,0 +1,9 @@
+cabal-version:       2.4
+name:                tony
+version:             0.1.0.0
+license-file:        LICENSE
+executable tony
+  main-is:             Main.hs
+  build-depends:       base ^>=4.13.0.0
+                      ,parsec
+  default-language:    Haskell2010
